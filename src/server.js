@@ -3,20 +3,20 @@ import bodyParser from "body-parser";
 import viewEngine from "./configs/viewEngine";
 import webRoutes from "./routes/web";
 
-const fs = require('fs');
-const https = require('https');
+var fs = require('fs');
+var https = require('https');
 
 require('dotenv').config();
 
 const httpsPort = 443;
 
-const httpsOptions = {
+const ssl = {
     cert: fs.readFileSync('./ssl/wodaem_me.crt'),
     ca: fs.readFileSync('./ssl/wodaem_me.ca-bundle'),
     key: fs.readFileSync('./ssl/wodaem_me.key'),
 }
 
-let app = express();
+const app = express();
 
 viewEngine(app);
 
@@ -27,13 +27,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-app.use(function(request, response, next) {
-    if (process.env.NODE_ENV != 'development' && !request.secure) {
-       return response.redirect("https://" + request.headers.host + request.url);
-    }
-    next();
+https.createServer(ssl, app).listen(httpsPort, () => {
+    console.log(">>> Log: Server is running on port " + httpsPort + " with ssl.");
 })
 
-const httpsServer = https.createServer(httpsOptions, app).listen(httpsPort, () => {
-    console.log("AA");
-})
