@@ -1,15 +1,17 @@
 FROM node:18-alpine
 
-WORKDIR /usr/src/app
-
-RUN npm i npm@latest -g
+WORKDIR /usr/backend
 
 COPY package*.json ./
 
+RUN npm i npm@latest -g
+
 RUN npm install
+
+RUN npm install -g @babel/core @babel/cli
 
 COPY . .
 
-EXPOSE 8080
+RUN npm run build-src
 
-CMD ["node", "server.js"]
+CMD [ "npm", "run", "build" ]
