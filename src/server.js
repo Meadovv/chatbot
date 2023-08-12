@@ -1,14 +1,14 @@
 import express from "express";
-import bodyParser from "body-parser";
 import viewEngine from "./configs/ViewEngine";
 import webRoutes from "./routes/web";
 
-var fs = require('fs');
-var https = require('https');
+let crypto = require("crypto")
+let { urlencoded, json } = require("body-parser")
+let fs = require('fs');
+let https = require('https');
+let http = require('http');
 
 require('dotenv').config();
-
-const httpsPort = 443;
 
 const ssl = {
     cert: fs.readFileSync('./ssl/wodaem_me.crt'),
@@ -17,17 +17,50 @@ const ssl = {
 }
 
 const app = express();
+app.enable('trust proxy')
 
 viewEngine(app);
 
 webRoutes(app);
 
-app.use(bodyParser.json()); 
-app.use(bodyParser.urlencoded({
+app.use(json());
+app.use(urlencoded({
     extended: true
 }));
 
-https.createServer(ssl, app).listen(httpsPort, () => {
-    console.log(">>> Log: Server is running on port " + httpsPort + " with ssl.");
+// verify request from facebook
+app.use(json({ verify: verifyRequestSignature }));
+
+// auto redirect to https from http
+app.use((req, res, next) => {
+    if (!isSecure(req)) {
+        return res.redirect("https://" + req.headers.host + req.url);
+    }
+    next();
+});
+
+http.createServer(app).listen(process.env.SERVER_PORT, () => {
+    console.log(">>> Log: Server is running on port " + process.env.SERVER_PORT + " in development.");
 })
 
+https.createServer(ssl, app).listen(process.env.SERVER_PORT_SSL, () => {
+    console.log(">>> Log: Server is running on port " + process.env.SERVER_PORT_SSL + " with ssl.");
+})
+
+function verifyRequestSignature(req, res, buf) {
+    var signature = req.headers["x-hub-signature-256"];
+  
+    if (!signature) {
+      console.warn(`Couldn't find "x-hub-signature-256" in headers.`);
+    } else {
+      var elements = signature.split("=");
+      var signatureHash = elements[1];
+      var expectedHash = crypto
+        .createHmac("sha256", config.appSecret)
+        .update(buf)
+        .digest("hex");
+      if (signatureHash != expectedHash) {
+        throw new Error("Couldn't validate the request signature.");
+      }
+    }
+  }
