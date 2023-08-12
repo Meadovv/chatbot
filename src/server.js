@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import viewEngine from "./configs/viewEngine";
+import viewEngine from "./configs/ViewEngine";
 import webRoutes from "./routes/web";
 
 var fs = require('fs');
