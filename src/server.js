@@ -33,7 +33,7 @@ app.use(json({ verify: verifyRequestSignature }));
 
 // auto redirect to https from http
 app.use((req, res, next) => {
-    if (!isSecure(req)) {
+    if (req.protocol === 'http') {
         return res.redirect("https://" + req.headers.host + req.url);
     }
     next();
